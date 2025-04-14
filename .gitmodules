@@ -1,0 +1,4 @@
+[submodule "freemodbus"]
+	path = freemodbus
+	url = git@github.com:alammertink/freemodbus.git
+	branch = development
