@@ -40,6 +40,9 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+# Add FreeModbus library
+add_subdirectory(${CMAKE_SOURCE_DIR}/freemodbus ${CMAKE_BINARY_DIR}/freemodbus)
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -48,11 +51,16 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+    ${CMAKE_SOURCE_DIR}/freemodbus/demo/STM32_CMAKE/port/portserial.c
+    ${CMAKE_SOURCE_DIR}/freemodbus/demo/STM32_CMAKE/port/porttimer.c
+    ${CMAKE_SOURCE_DIR}/freemodbus/demo/STM32_CMAKE/port/portevent.c
+    ${CMAKE_SOURCE_DIR}/freemodbus/demo/STM32_CMAKE/demo.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    ${FREEMODBUS_INCLUDE_DIRS}
 )
 
 # Add project symbols (macros)
@@ -65,4 +73,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+    freemodbus
 )
