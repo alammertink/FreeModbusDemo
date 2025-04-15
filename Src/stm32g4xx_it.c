@@ -22,6 +22,7 @@
 #include "stm32g4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "port.h"  /* Include Modbus port functions */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,7 +42,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+extern UART_HandleTypeDef hcom_uart[];
+extern TIM_HandleTypeDef htim7;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -213,5 +215,39 @@ void EXTI15_10_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+/**
+  * @brief This function handles USART2 global interrupt.
+  */
+void USART2_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART2_IRQn 0 */
+  if (__HAL_UART_GET_FLAG(&hcom_uart[COM1], UART_FLAG_RXNE))
+  {
+    prvvUARTRxISR();
+  }
 
+  if (__HAL_UART_GET_FLAG(&hcom_uart[COM1], UART_FLAG_TXE))
+  {
+    prvvUARTTxReadyISR();
+  }
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&hcom_uart[COM1]);
+  /* USER CODE BEGIN USART2_IRQn 1 */
+
+  /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM7 global interrupt.
+  */
+void TIM7_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM7_IRQn 0 */
+  prvvTIMERExpiredISR();
+  /* USER CODE END TIM7_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim7);
+  /* USER CODE BEGIN TIM7_IRQn 1 */
+
+  /* USER CODE END TIM7_IRQn 1 */
+}
 /* USER CODE END 1 */

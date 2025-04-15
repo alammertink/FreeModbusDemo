@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "mb.h"
+#include "mbport.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,7 +32,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define REG_INPUT_START 1000
+#define REG_INPUT_NREGS 4
+#define SLAVE_ID        1
+#define MB_BAUDRATE     115200
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,7 +49,8 @@ COM_InitTypeDef BspCOMInit;
 TIM_HandleTypeDef htim7;
 
 /* USER CODE BEGIN PV */
-
+static USHORT usRegInputStart = REG_INPUT_START;
+static USHORT usRegInputBuf[REG_INPUT_NREGS];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -53,7 +58,10 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM7_Init(void);
 /* USER CODE BEGIN PFP */
-
+eMBErrorCode eMBRegInputCB(UCHAR* pucRegBuffer, USHORT usAddress, USHORT usNRegs);
+eMBErrorCode eMBRegHoldingCB(UCHAR* pucRegBuffer, USHORT usAddress, USHORT usNRegs, eMBRegisterMode eMode);
+eMBErrorCode eMBRegCoilsCB(UCHAR* pucRegBuffer, USHORT usAddress, USHORT usNCoils, eMBRegisterMode eMode);
+eMBErrorCode eMBRegDiscreteCB(UCHAR* pucRegBuffer, USHORT usAddress, USHORT usNDiscrete);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -67,9 +75,8 @@ static void MX_TIM7_Init(void);
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
-
+  eMBErrorCode eStatus;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -91,35 +98,47 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM7_Init();
+  
   /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
   /* Initialize leds */
   BSP_LED_Init(LED_GREEN);
 
-  /* Initialize USER push-button, will be used to trigger an interrupt each time it's pressed.*/
+  /* Initialize USER push-button */
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_EXTI);
 
-  /* Initialize COM1 port (115200, 8 bits (7-bit data + 1 stop bit), no parity */
-  BspCOMInit.BaudRate   = 115200;
-  BspCOMInit.WordLength = COM_WORDLENGTH_8B;
-  BspCOMInit.StopBits   = COM_STOPBITS_1;
-  BspCOMInit.Parity     = COM_PARITY_NONE;
-  BspCOMInit.HwFlowCtl  = COM_HWCONTROL_NONE;
-  if (BSP_COM_Init(COM1, &BspCOMInit) != BSP_ERROR_NONE)
-  {
+  /* Initialize Modbus RTU mode */
+  eStatus = eMBInit(MB_RTU, SLAVE_ID, 0, MB_BAUDRATE, MB_PAR_NONE);
+  
+  /* Enable the Modbus Protocol Stack */
+  eStatus = eMBEnable();
+  if (eStatus != MB_ENOERR) {
+    /* Error handling if Modbus fails to initialize */
     Error_Handler();
   }
+
+  /* Initialize register values */
+  usRegInputBuf[0] = 1000;  /* Example input register value */
+  usRegInputBuf[1] = 2000;
+  usRegInputBuf[2] = 3000;
+  usRegInputBuf[3] = 4000;
+  /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    /* Process Modbus events */
+    eMBPoll();
+    
+    /* Toggle LED every 200ms for visual feedback */
+    BSP_LED_Toggle(LED_GREEN);
+    HAL_Delay(200);
+    
+    /* Update a register to show changing values */
+    usRegInputBuf[0]++;
   }
   /* USER CODE END 3 */
 }
@@ -231,7 +250,66 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/**
+  * @brief  Modbus input registers callback function
+  * @param  pucRegBuffer register buffer
+  * @param  usAddress register address
+  * @param  usNRegs number of registers
+  * @retval eMBErrorCode error code
+  */
+eMBErrorCode eMBRegInputCB(UCHAR* pucRegBuffer, USHORT usAddress, USHORT usNRegs)
+{
+  eMBErrorCode eStatus = MB_ENOERR;
+  int iRegIndex;
 
+  /* Check if the request is in valid range */
+  if ((usAddress >= REG_INPUT_START) && 
+      (usAddress + usNRegs <= REG_INPUT_START + REG_INPUT_NREGS))
+  {
+    iRegIndex = (int)(usAddress - usRegInputStart);
+    
+    /* Fill response buffer with register values */
+    while (usNRegs > 0)
+    {
+      /* Register values are stored in big-endian format */
+      *pucRegBuffer++ = (UCHAR)(usRegInputBuf[iRegIndex] >> 8);
+      *pucRegBuffer++ = (UCHAR)(usRegInputBuf[iRegIndex] & 0xFF);
+      iRegIndex++;
+      usNRegs--;
+    }
+  }
+  else
+  {
+    /* Address is outside valid range */
+    eStatus = MB_ENOREG;
+  }
+
+  return eStatus;
+}
+
+/**
+  * @brief  Modbus holding registers callback function (not implemented)
+  */
+eMBErrorCode eMBRegHoldingCB(UCHAR* pucRegBuffer, USHORT usAddress, USHORT usNRegs, eMBRegisterMode eMode)
+{
+  return MB_ENOREG;
+}
+
+/**
+  * @brief  Modbus coils callback function (not implemented)
+  */
+eMBErrorCode eMBRegCoilsCB(UCHAR* pucRegBuffer, USHORT usAddress, USHORT usNCoils, eMBRegisterMode eMode)
+{
+  return MB_ENOREG;
+}
+
+/**
+  * @brief  Modbus discrete inputs callback function (not implemented)
+  */
+eMBErrorCode eMBRegDiscreteCB(UCHAR* pucRegBuffer, USHORT usAddress, USHORT usNDiscrete)
+{
+  return MB_ENOREG;
+}
 /* USER CODE END 4 */
 
 /**
