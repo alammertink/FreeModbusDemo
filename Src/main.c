@@ -120,19 +120,23 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  uint32_t lastToggleTime = HAL_GetTick(); // Initialize last toggle time
+
   while (1)
   {
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
     /* Process Modbus events */
     modbusPoll();
     
-    /* Toggle LED for visual feedback */
-    BSP_LED_Toggle(LED_GREEN);
-    
-    /* Note: Remove any HAL_Delay calls from the main loop */
+    /* Toggle LED for visual feedback every 500 ms */
+    if (HAL_GetTick() - lastToggleTime >= 500)
+    {
+      BSP_LED_Toggle(LED_GREEN);
+      lastToggleTime = HAL_GetTick();
+    }
   }
   /* USER CODE END 3 */
 }
