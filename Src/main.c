@@ -96,9 +96,6 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
-  /* Initialize Modbus */
-  modbusInit();
-
   /* USER CODE END 2 */
 
   /* Initialize leds */
@@ -118,13 +115,24 @@ int main(void)
     Error_Handler();
   }
 
+  printf("STM32 Modbus RTU Slave Example\r\n");
+
+#ifndef MODBUS_USE_USART // Deinitialize COM port for use with Modbus
+  HAL_Delay(100); // Wait for message to be sent
+  BSP_COM_DeInit(COM1); 
+#endif
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  /* Initialize Modbus */
+  modbusInit();  // must be called after initializing COM port (at least when using BSP COM feature)
 
   uint32_t lastToggleTime = HAL_GetTick(); // Initialize last toggle time
 
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
