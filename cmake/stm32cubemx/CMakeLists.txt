@@ -7,6 +7,7 @@ set(MX_Defines_Syms
 	USE_HAL_DRIVER 
 	STM32G431xx
     $<$<CONFIG:Debug>:DEBUG>
+    USE_FULL_ASSERT
 )
 
 # STM32CubeMX generated include paths
