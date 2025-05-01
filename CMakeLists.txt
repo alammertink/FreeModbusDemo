@@ -51,9 +51,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-    ${CMAKE_SOURCE_DIR}/freemodbus/demo/STM32_CMAKE/port/portserial.c
-    ${CMAKE_SOURCE_DIR}/freemodbus/demo/STM32_CMAKE/port/porttimer.c
-    ${CMAKE_SOURCE_DIR}/freemodbus/demo/STM32_CMAKE/port/portevent.c
+    ${FREEMODBUS_APP_SOURCES} # Platform-dependent sources from FreeModbus
     ${CMAKE_SOURCE_DIR}/freemodbus/demo/STM32_CMAKE/demo.c
 )
 
